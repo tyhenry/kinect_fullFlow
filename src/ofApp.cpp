@@ -14,8 +14,8 @@ void ofApp::setup(){
 	kinect.init(true, true); // color, body
 	user = User(kinect.getCoordinateMapper());
 
-	hover.load("hover.png");
-	grab.load("grab.png");
+	hover.load(ofToDataPath("hover.png"));
+	grab.load(ofToDataPath("grab.png"));
 
 	setupMenus();
 }
@@ -28,13 +28,19 @@ void ofApp::update(){
 
 	bNewUser = user.setBody(kinect.getCentralBodyPtr());
 	user.update();
+	bUser = user.hasBody();
 
-	if (bUser && bNewUser) {
+	if (bUser && bNewUser && bResetMenus) {
 		menus.restart();
+		menus.getMenuPtr("attract")->resetPos();
 	}
 
 	if (bUser) { // have user
 		bool bRelease = false;
+		// change menu height to match body position
+		if (menus.getMenuName() != "attract")
+			menus.setTop(user.getJoint2dPos(JointType_Head).y);
+
 		// same user
 		if (!bNewUser) {
 
@@ -56,6 +62,13 @@ void ofApp::update(){
 
 				if (menus.isHoverSelect()) { // if we've hovered enough to select
 					menus.next(); // next screen
+					// if lefty, move menus to left side
+					if (!bRighty) {
+						menus.setLeft(crop.getLeft() + 20);
+					}
+					else {
+						menus.setLeft(crop.getRight() - 120);
+					}
 				}
 			}
 
@@ -130,7 +143,10 @@ void ofApp::update(){
 	else { // no user, restart
 		bGrabbing = false;
 		bRighty = true;
-		menus.restart();
+		if (bResetMenus) {
+			menus.restart();
+			menus.getMenuPtr("attract")->resetPos();
+		}
 	}
 
 	menus.update();
@@ -139,7 +155,75 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-	// draw stuff!
+	vertScreen.begin();
+	{
+		// user
+		if (bDrawUser) {
+			user.draw();
+		}
+
+		// menu
+		menus.draw();
+
+		// hand icons
+		if (bUser) {
+
+			// get hand position
+			JointType hand = bRighty ? JointType_HandRight : JointType_HandLeft;
+			ofVec2f handCPos = user.getJoint2dPos(hand);
+			ofRectangle handRect;
+			if (bRighty) {
+				handRect.set(handCPos.x - 50, handCPos.y - 50, 100, 100);
+			}
+			else {
+				handRect.set(handCPos.x + 50, handCPos.y - 50, -100, 100);
+			}
+
+			// grab
+			if (bGrabbing) {
+				grab.draw(handRect);
+			}
+			// or hover
+			else {
+				float hoverTime = menus.getHoverTime();
+				// draw circle for hover timer
+				hover.draw(handRect);
+				if (hoverTime > 0.5) {
+					// draw growing arc
+					ofPushStyle();
+					// arc bg
+					float radius = handRect.getHeight()*0.75f;
+					ofSetColor(0);
+					ofSetLineWidth(15);
+					ofPolyline timerbg;
+					timerbg.arc(handCPos, radius, radius, 0, 360, 60);
+					timerbg.draw();
+					// arc
+					ofSetColor(255);
+					ofSetLineWidth(10);
+					ofPolyline timer;
+					float angleEnd = ofMap(hoverTime, 0.5, 3.0, 1, 360, true);
+					timer.arc(handCPos, radius, radius, 0, angleEnd, 60);
+					timer.draw();
+					ofPopStyle();
+				}
+			}
+			if (menus.getMenuName() == "attract") {
+				// draw other hand
+				JointType oHand = bRighty ? JointType_HandLeft : JointType_HandRight;
+				ofVec2f oHandCPos = user.getJoint2dPos(oHand);
+				ofRectangle oHandRect;
+				if (!bRighty) {
+					oHandRect.set(oHandCPos.x - 50, oHandCPos.y - 50, 100, 100);
+				}
+				else {
+					oHandRect.set(oHandCPos.x + 50, oHandCPos.y - 50, -100, 100);
+				}
+				hover.draw(oHandRect);
+			}
+		}
+	}
+	vertScreen.end();
 
 }
 
@@ -147,14 +231,14 @@ void ofApp::setupMenus(float topY, float height, int numButtons) {
 
 	menus.clearMenus();
 
-	ofRectangle closeRect(crop.getRight - 120, topY + height + 10, height/numButtons, height/numButtons);
+	ofRectangle closeRect(crop.getRight() - 120, topY + height + 15, height/numButtons, height/numButtons);
 
 	// 0 attract menu
 
 	VertMenu menuAttract;
 	menuAttract.setScreenOverlay(ofImage("introScreen.png"), crop.position, crop.width, crop.height);
-	menuAttract.addStaticButton(ofImage(), ofVec2f(125, 375), 100, 125);
-	menuAttract.addStaticButton(ofImage(), ofVec2f(400, 375), 100, 125);
+	menuAttract.addStaticButton(ofImage(), ofVec2f(crop.getLeft()+125, 375), 100, 125, false);
+	menuAttract.addStaticButton(ofImage(), ofVec2f(crop.getLeft()+400, 375), 100, 125, false);
 	menus.addMenu(menuAttract,"attract");
 
 	// 1 cut menu
@@ -203,6 +287,26 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
+	if (key == 'v' || key == 'V') {
+		vertScreen.nextScreenMode();
+	}
+	else if (key == 'u' || key == 'U') {
+		bDrawUser = !bDrawUser;
+	}
+	else if (key == OF_KEY_LEFT) {
+		// page menu back
+		menus.prev();
+	}
+	else if (key == OF_KEY_RIGHT) {
+		// page menu forward
+		menus.next();
+	}
+	else if (key == 'r' || key == 'R') {
+		bResetMenus = !bResetMenus;
+	}
+	else if (key == 'c' || key == 'C') {
+		bDrawColor = !bDrawColor;
+	}
 
 }
 

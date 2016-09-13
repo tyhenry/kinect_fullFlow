@@ -1,7 +1,5 @@
 #include "MenuSystem.h"
 
-MenuSystem::MenuSystem() {}
-
 int MenuSystem::addMenu(VertMenu menu, string name) {
 	_menus.push_back(menu);
 	_menuNames.push_back(name);
@@ -55,6 +53,9 @@ void MenuSystem::update() {
 void MenuSystem::draw() {
 	if (exists(_cMenu)) {
 		_menus[_cMenu].draw();
+	}
+	else {
+		cout << "drawing menu " << _cMenu << " that doesn't exist!" << endl;
 	}
 }
 

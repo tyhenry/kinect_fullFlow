@@ -47,10 +47,10 @@ public:
 	bool bNewUser = false; // new user?
 	bool bGrabbing = false; // user grabbing?
 
-	float hoverTime = 0; // num seconds hovered
-	float hoverWait = 3; // num seconds until select
-
-	bool drawUser = false;
+	bool bDrawUser = true;
+	bool bDrawColor = false;
+	bool bResetMenus = true;
 
 	bool bRighty = true;
+
 };

@@ -15,7 +15,7 @@ public:
 	};
 protected:
 	ofFbo _screen;
-	VertScreenMode _mode = SimVertScreen;
+	VertScreenMode _mode = HorzScreen;
 	bool _begun = false;
 	float w, h;
 public:

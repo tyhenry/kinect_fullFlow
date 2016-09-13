@@ -25,7 +25,14 @@ public:
 
 	void setTop(float y) {
 		for (int i = 0; i < _menus.size(); i++) {
-			_menus[i].setYPos(y);
+			if (_menuNames[i] != "attract")
+				_menus[i].setYPos(y);
+		}
+	}
+	void setLeft(float x) {
+		for (int i = 0; i < _menus.size(); i++) {
+			if (_menuNames[i] != "attract")
+				_menus[i].setXPos(x);
 		}
 	}
 
@@ -61,7 +68,7 @@ private:
 	float _hoverWait = 3; // num secs until hover becomes select
 
 	bool exists(int menuIdx){ 
-		if (menuIdx > 0 && menuIdx < _menus.size()) return true;
+		if (menuIdx >= 0 && menuIdx < _menus.size()) return true;
 		return false;
 	}
 	int getIndexFromName(string name) {

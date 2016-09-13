@@ -3,10 +3,9 @@
 
 class Button {
 public:
-	Button() {};
-	Button(int index, ofImage bgImg, ofVec2f centerPos, float width, float height, bool isStatic=false)
-		: idx(index), bg(bgImg), center(centerPos), w(width), h(height), bStatic(isStatic) {
-
+	Button(int index=0, ofImage bgImg=ofImage(), ofVec2f centerPos=ofVec2f(), float width=0, float height=0, bool isStatic=false, bool drawHighlight=true)
+		: idx(index), bg(bgImg), center(centerPos), w(width), h(height), bStatic(isStatic), bDrawHighlight(drawHighlight) {
+		origCenter = center; origW = w; origH = h;
 		setBounds();
 	}
 	void setBounds() { setBounds(center, w, h); }
@@ -42,11 +41,17 @@ public:
 		tl.y = center.y - h*0.5;
 		return tl;
 	}
-	void setLeft(float x) { 
+	void setLeft(float x) {
+		origCenter = center; origW = w; origH = h;
 		center.x = x + w*0.5; setBounds();
 	}
-	void setTop(float y) { 
+	void setTop(float y) {
+		origCenter = center; origW = w; origH = h;
 		center.y = y + h*0.5; setBounds();
+	}
+	void resetPos() {
+		center = origCenter; w = origW; h = origH;
+		setBounds();
 	}
 	ofRectangle getBounds() { return bounds; }
 	void setHovered(bool hov) {
@@ -58,7 +63,7 @@ public:
 	bool isStatic() { return bStatic; }
 
 	void draw() {
-		if (hovered) {
+		if (hovered && bDrawHighlight) {
 			ofPushStyle();
 			ofSetColor(255);
 			ofFill();
@@ -67,7 +72,7 @@ public:
 			ofPopStyle();
 		}
 		bg.draw(bounds);
-		if (bStatic) {
+		if (bStatic && bDrawHighlight) {
 			ofPushStyle();
 			ofNoFill();
 			ofSetColor(0);
@@ -81,7 +86,9 @@ protected:
 	int idx;
 	ofImage bg;
 	ofVec2f center; float w = 0, h = 0;
+	ofVec2f origCenter; float origW = 0, origH = 0;
 	ofRectangle bounds;
 	bool hovered = false;
 	bool bStatic = false;
+	bool bDrawHighlight = true;
 };

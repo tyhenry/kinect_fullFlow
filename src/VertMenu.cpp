@@ -1,11 +1,11 @@
 #include "VertMenu.h"
 
-int VertMenu::addButton(ofImage img) {
+int VertMenu::addButton(ofImage img, bool drawHighlight) {
 	int idx = _buttons.size();
 	float btnH = (float)_h / (float)_nBtnsDisplay;
 	float btnW = btnH; // square tiles
 	ofVec2f cPos(_x + btnW*0.5, _y + btnH*idx + btnH*0.5);
-	_buttons.push_back(Button(idx, img, cPos, btnW, btnH));
+	_buttons.push_back(Button(idx, img, cPos, btnW, btnH, false, drawHighlight));
 
 	// update carousel
 	carousel.length = _buttons.size()*btnH;
@@ -14,10 +14,10 @@ int VertMenu::addButton(ofImage img) {
 	return idx;
 }
 
-int VertMenu::addStaticButton(ofImage img, ofVec2f pos, float w, float h) {
+int VertMenu::addStaticButton(ofImage img, ofVec2f pos, float w, float h, bool drawHighlight) {
 	int idx = _buttons.size();
 	ofVec2f cPos(pos.x + w*0.5, pos.y + h*0.5);
-	_buttons.push_back(Button(idx, img, cPos, w, h, true));
+	_buttons.push_back(Button(idx, img, cPos, w, h, true, drawHighlight));
 	return idx;
 }
 
@@ -101,12 +101,28 @@ float VertMenu::getGrabTime() {
 }
 
 int VertMenu::hitTest(ofVec2f pos) {
+	int idx = -1;
 	for (auto& btn : _buttons) {
 		if (btn.getBounds().inside(pos)) {
-			return btn.getIndex();
+			idx = btn.getIndex();
+			// static button
+			if (_buttons[idx].isStatic()) {
+				break;
+			}
+			// carousel button
+			else {
+				ofRectangle carouselBounds(_x, _y, _w, _h);
+				if (carouselBounds.inside(pos)) {
+					break;
+				}
+				else {
+					idx = -1;
+					// continue as hidden non-static buttons might be over static buttons
+				}
+			}
 		}
 	}
-	return -1;
+	return idx;
 }
 
 void VertMenu::update() {
@@ -127,22 +143,37 @@ void VertMenu::drawScreenOverlay(ofVec2f pos, float w, float h) {
 }
 
 void VertMenu::drawMenu() {
+	// carousel buttons
+	fbo.begin();
+	ofColor clear(0, 0, 0, 0);
+	ofClear(clear);
+
 	ofPushStyle();
-	if (_yOffset != 0) {
-		ofPushMatrix();
-		ofTranslate(0, _yOffset);
-	}
 
 	for (int i = 0; i < _buttons.size(); i++) {
-
-		if (_grabIdx == i) // grabbed button
-			ofSetColor(255, 0, 0);
-		else if (_hoverIdx == i) // hover
-			ofSetColor(0, 255, 0);
-		_buttons[i].draw();
-		ofSetColor(255);
+		if (!_buttons[i].isStatic()) {
+			if (_grabIdx == i) // grabbed button
+				ofSetColor(255, 0, 0);
+			else if (_hoverIdx == i) // hover
+				ofSetColor(0, 255, 0);
+			_buttons[i].draw();
+			ofSetColor(255);
+		}
 	}
 
-	if (_yOffset != 0) ofPopMatrix();
 	ofPopStyle();
+
+	fbo.end();
+	ofTexture tex = fbo.getTexture();
+	tex.drawSubsection(_x, _y, _w, _h, _x, _y, _w, _h);
+
+	for (int i = 0; i < _buttons.size(); i++) {
+		if (_buttons[i].isStatic()) {
+			if (_grabIdx == i) // grabbed button
+				ofSetColor(255, 0, 0);
+			else if (_hoverIdx == i) // hover
+				ofSetColor(0, 255, 0);
+			_buttons[i].draw();
+		}
+	}
 }
